@@ -30,9 +30,8 @@ router.post("/comments", async (req: Request, res: Response) => {
 // GET /comments?limit=10&skip=0
 // GET /comments?sortBy=createdAt&dir=asc
 router.get("/comments", async (req: Request, res: Response) => {
-  let query = {
-    hidden: false
-  }
+  const includeHidden = req.query.all === 'true';
+  const query = includeHidden ? {} : { hidden: false };
   // const sort = {};
   // if (req.query.completed) {
   //   query = { ...query, completed: req.query.completed === "true" }
@@ -62,6 +61,7 @@ router.get("/comments", async (req: Request, res: Response) => {
 router.get("/comments/:id", auth, async (req: Request, res: Response) => {
   const _id = req.params.id;
   try {
+    // const comment = await AppComment.findOne({ _id, owner: res.locals.user._id });
     const comment = await AppComment.findOne({ _id, owner: res.locals.user._id });
     if (!comment) {
       return res.status(404).send();
@@ -80,13 +80,15 @@ router.get("/comments/:id", auth, async (req: Request, res: Response) => {
 router.patch("/comments/:id", auth, async (req: Request, res: Response) => {
   const _id = req.params.id;
   const updates = Object.keys(req.body);
-  const allowedUpdates = ['text', 'completed'];
+  const allowedUpdates = ['hidden'];
   const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
   if (!isValidOperation) {
     return res.status(400).send({error: "invalid updates"})
   }
   try {
-    const comment = await AppComment.findOne({ _id, owner: res.locals.user._id });
+    // TODO: only allow admins to update comments for exhibits they have access to
+    // const comment = await AppComment.findOne({ _id, owner: res.locals.user._id });
+    const comment = await AppComment.findOne({ _id });
     if (!comment) {
       return res.status(404).send();
     }
@@ -109,7 +111,9 @@ router.patch("/comments/:id", auth, async (req: Request, res: Response) => {
 router.delete("/comments/:id", auth, async (req: Request, res: Response) => {
   const _id = req.params.id;
   try {
-    const comment = await AppComment.findOneAndDelete({_id, owner: res.locals.user._id});
+    // TODO: only allow admins to delete comments for exhibits they have access to
+    // const comment = await AppComment.findOneAndDelete({_id, owner: res.locals.user._id});
+    const comment = await AppComment.findOneAndDelete({_id});
     if (!comment) {
       return res.status(404).send();
     }

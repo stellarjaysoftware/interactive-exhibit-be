@@ -13,7 +13,7 @@ const auth = async (req: Request, res: Response, next:() => void): Promise<void>
     res.locals.token = token;
     res.locals.user = user;
     // TODO: figure out how to set this when admin
-    res.locals.isAdmin = false;
+    // res.locals.isAdmin = true;
     next();
   } catch (error) {
     res.status(401).send({ error: 'please authenticate'});
