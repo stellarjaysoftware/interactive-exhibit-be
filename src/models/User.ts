@@ -6,6 +6,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 // const { Task } = require('../models/Task');
 
+export type TokenContainer = {
+  _id: string,
+  token: string
+}
+
 const userDefinition:SchemaDefinition = {
   name: {
     type: String,
@@ -34,6 +39,7 @@ const userDefinition:SchemaDefinition = {
       }
     }
   },
+  // TokenContainer[]
   tokens: [{
     token: {
       type: String,
@@ -46,9 +52,9 @@ const userSchema = new mongoose.Schema(userDefinition, {
   timestamps: true
 });
 
-userSchema.methods.generateAuthToken = async function () {
+userSchema.methods.generateAuthToken = async function (): Promise<string> {
   const user = this;
-  const token = jwt.sign({_id: user._id.toString()}, 'taskmanagerapp');
+  const token = jwt.sign({_id: user._id.toString()}, 'exhibit-app');
   user.tokens = user.tokens.concat({token});
   await user.save();
   return token;
@@ -61,7 +67,7 @@ userSchema.virtual('tasks', {
   foreignField: 'owner'
 });
 
-userSchema.methods.toJSON = function () {
+userSchema.methods.toJSON = function (): object {
   const user = this;
   const userObject = user.toObject();
   delete userObject.password;
@@ -69,7 +75,12 @@ userSchema.methods.toJSON = function () {
   return userObject;
 }
 
-userSchema.statics.findByCredentials = async (email:string, password:string) => {
+userSchema.statics.emailIsAvailable = async (email:string): Promise<boolean> => {
+  const user = await User.findOne({email});
+  return !user;
+}
+
+userSchema.statics.findByCredentials = async (email:string, password:string): Promise<typeof User> => {
   const user = await User.findOne({email});
   if (!user) {
     throw new Error('Unable to login');
@@ -82,16 +93,17 @@ userSchema.statics.findByCredentials = async (email:string, password:string) => 
 }
 
 // hash password before saving
-// userSchema.pre('save', async function (next:any) {
-//   const user = this;
-//
-//   if(user.isModified('password')) {
-//     user.password = await bcrypt.hash(user.password, 8);
-//   }
-//
-//   next();
-// });
+userSchema.pre('save', async function (next:any): Promise<void> {
+  // @ts-ignore
+  const user = this as User;
 
+  if(user.isModified('password')) {
+    user.password = await bcrypt.hash(user.password, 8);
+  }
+  next();
+});
+
+// TODO: when user deletes, remove related records?
 // userSchema.pre('remove', async function (next) {
 //   const user = this;
 //   await Task.deleteMany({owner: user._id});

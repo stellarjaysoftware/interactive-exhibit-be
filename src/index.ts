@@ -16,6 +16,8 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(userRouter);
 app.use(commentRouter);
+// collection and exhibit endpoints?
+// create graphQL endpoint?
 
 app.listen(port, () => {
   console.log("server is up on port " + port);
